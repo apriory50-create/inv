@@ -1,0 +1,65 @@
+name: APK from ZIP
+
+# Собирает APK из zip-архива проекта, лежащего в корне репозитория.
+# Запуск: вкладка Actions -> "APK from ZIP" -> Run workflow
+# (или автоматически при загрузке нового .zip в корень).
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '*.zip'
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack project zip
+        run: |
+          ZIP=$(ls -1 ./*.zip | head -1)
+          echo "Using $ZIP"
+          mkdir work
+          unzip -q "$ZIP" -d work
+          PROJECT=$(dirname "$(find work -name pubspec.yaml | head -1)")
+          echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
+          echo "Project dir: $PROJECT"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Create Android platform files
+        working-directory: ${{ env.PROJECT }}
+        run: flutter create . --platforms=android
+
+      - name: Get packages
+        working-directory: ${{ env.PROJECT }}
+        run: flutter pub get
+
+      - name: Analyze (does not block the build)
+        working-directory: ${{ env.PROJECT }}
+        continue-on-error: true
+        run: flutter analyze
+
+      - name: Test (does not block the build)
+        working-directory: ${{ env.PROJECT }}
+        continue-on-error: true
+        run: flutter test
+
+      - name: Build APK
+        working-directory: ${{ env.PROJECT }}
+        run: flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: invest-trainer-apk
+          path: ${{ env.PROJECT }}/build/app/outputs/flutter-apk/app-release.apk
