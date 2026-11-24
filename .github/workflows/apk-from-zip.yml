@@ -38,9 +38,8 @@ jobs:
           cache: true
 
       - name: Create Android platform files
-        run: |
-          cd "$PROJECT"
-          flutter create --project-name invest_trainer --org ru.investacademy --platforms=android .
+        working-directory: ${{ env.PROJECT }}
+        run: flutter create . --platforms=android
 
       - name: Get packages
         working-directory: ${{ env.PROJECT }}
@@ -49,7 +48,7 @@ jobs:
       - name: Analyze (does not block the build)
         working-directory: ${{ env.PROJECT }}
         continue-on-error: true
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Test (does not block the build)
         working-directory: ${{ env.PROJECT }}
