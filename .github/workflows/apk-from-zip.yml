@@ -102,4 +102,6 @@ jobs:
       - name: Test
         working-directory: ${{ env.PROJECT }}
         timeout-minutes: 15
-        run: flutter test --reporter expanded
+        # --concurrency=1: тесты по одному, чтобы не падал компилятор от нехватки памяти
+        #  и не мешали друг другу временные папки.
+        run: flutter test --reporter expanded --concurrency=1
